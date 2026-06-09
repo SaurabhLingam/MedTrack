@@ -509,27 +509,22 @@ const ResultScreen = ({ navigation, route }) => {
   useEffect(() => {
     (async () => {
       setIsLoading(true);
-      try {
-        const data = await analyzeImage(imageUri);
-        setResultData(data);
-      } catch (e) {
-        console.error(e);
-      } finally {
-        setIsLoading(false);
-        Animated.parallel([
-          Animated.timing(fadeIn, {
-            toValue: 1,
-            duration: 600,
-            useNativeDriver: true,
-          }),
-          Animated.spring(slideUp, {
-            toValue: 0,
-            friction: 8,
-            tension: 60,
-            useNativeDriver: true,
-          }),
-        ]).start();
-      }
+      const data = await analyzeImage(imageUri);
+      setResultData(data);
+      setIsLoading(false);
+      Animated.parallel([
+        Animated.timing(fadeIn, {
+          toValue: 1,
+          duration: 600,
+          useNativeDriver: true,
+        }),
+        Animated.spring(slideUp, {
+          toValue: 0,
+          friction: 8,
+          tension: 60,
+          useNativeDriver: true,
+        }),
+      ]).start();
     })();
   }, [imageUri]);
 
@@ -547,31 +542,7 @@ const ResultScreen = ({ navigation, route }) => {
 
   if (isLoading) return <LoadingView imageUri={imageUri} />;
 
-  if (!resultData) {
-    return (
-      <View style={styles.errorScreen}>
-        <MaterialCommunityIcons
-          name="alert-circle-outline"
-          size={48}
-          color={palette.coral}
-        />
-        <Text weight="700" style={styles.errorTitle}>
-          No Data Found
-        </Text>
-        <Text style={styles.errorSub}>
-          We couldn't read the medicine packet. Try scanning again.
-        </Text>
-        <TouchableOpacity
-          style={styles.errorBtn}
-          onPress={() => navigation.goBack()}
-        >
-          <Text weight="700" style={styles.errorBtnText}>
-            Go Back
-          </Text>
-        </TouchableOpacity>
-      </View>
-    );
-  }
+  
 
   const { medicine, info } = resultData;
 
