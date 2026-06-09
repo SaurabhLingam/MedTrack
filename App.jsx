@@ -2,7 +2,10 @@ import React, { useEffect } from "react";
 import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import * as Notifications from "expo-notifications";
-
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useState } from "react";
+import { DeviceEventEmitter } from "react-native";
+import NotificationSliderAlert from "./Pages/MediLog/NotificationSliderAlert";
 import {
   configureForegroundHandler,
   setupNotificationChannel,
@@ -27,22 +30,46 @@ import MediTrackResult from "./Pages/MediScan/Result";
 const Stack = createNativeStackNavigator();
 
 export default function App() {
-  useEffect(() => {
-    // 1. Configure how notifications appear while the app is in the foreground
-    configureForegroundHandler();
+  const [inAppAlert, setInAppAlert] = useState({ visible: false, title: "", message: "" });
 
-    // 2. Register Android channel + action buttons at startup so they exist
-    //    before any notification can possibly fire
-    (async () => {
+  useEffect(() => {
+    const sub = DeviceEventEmitter.addListener("medtrack-in-app-reminder", ({ title, message }) => {
+      setInAppAlert({ visible: true, title, message });
+    });
+    return () => sub.remove();
+  }, []);
+
+  useEffect(() => {
+    const init = async () => {
+      await AsyncStorage.setItem("currentUser", "user@medtrack.app");
+
+      // Re-register in-app timers for all existing medicines on app start
+      const { scheduleNotifications, isExpoGo } = require("./Pages/MediLog/notificationService");
+      if (isExpoGo) {
+        const medsRaw = await AsyncStorage.getItem("medicines_user@medtrack.app");
+        const meds = medsRaw ? JSON.parse(medsRaw) : [];
+        for (const med of meds) {
+          if (med.active && med.times?.length) {
+            await scheduleNotifications(med);
+          }
+        }
+        console.log(`Re-registered timers for ${meds.length} medicines`);
+      }
+
+      // 1. Configure how notifications appear while the app is in the foreground
+      configureForegroundHandler();
+
+      // 2. Register Android channel + action buttons at startup
       await setupNotificationChannel();
       await setupNotificationCategory();
-    })();
 
-    // 3. Handle the action that cold-launched / resumed the app
-    //    (getLastNotificationResponseAsync captures the tap that opened the app)
-    Notifications.getLastNotificationResponseAsync().then((response) => {
-      if (response) handleNotificationAction(response);
-    });
+      // 3. Handle the action that cold-launched / resumed the app
+      Notifications.getLastNotificationResponseAsync().then((response) => {
+        if (response) handleNotificationAction(response);
+      });
+    };
+
+    init();
 
     // 4. Handle actions while the app is already running (fore- & background)
     const subscription = Notifications.addNotificationResponseReceivedListener(
@@ -54,11 +81,17 @@ export default function App() {
 
   return (
     <NavigationContainer>
+      <NotificationSliderAlert
+        visible={inAppAlert.visible}
+        title={inAppAlert.title}
+        message={inAppAlert.message}
+        onClose={() => setInAppAlert(a => ({ ...a, visible: false }))}
+      />
       <Stack.Navigator screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="Home" component={Home} />
         <Stack.Screen name="Login" component={Login} />
         <Stack.Screen name="Register" component={Register} />
 
-        <Stack.Screen name="Home" component={Home} />
 
         <Stack.Screen name="MediLogDash" component={MediLogDash} />
         <Stack.Screen name="LogNewMedicine" component={LogNewMedicine} />

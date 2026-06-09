@@ -11,6 +11,8 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import * as Notifications from "expo-notifications";
+import { isExpoGo } from "./notificationService";
 import { Text } from "../../Components/TextWrapper";
 
 // ─── Helper ───────────────────────────────────────────────────────────────────
@@ -109,6 +111,13 @@ const MedicineBox = ({ navigation }) => {
           await AsyncStorage.setItem(`lowstock_alert_${med.id}`, "true");
         }
       }
+
+      const lowStockIds = new Set(lowStock.map((m) => m.id));
+      for (const med of active) {
+        if (!lowStockIds.has(med.id)) {
+          await AsyncStorage.removeItem(`lowstock_alert_${med.id}`);
+        }
+      }
     } catch (_) {}
   };
 
@@ -128,6 +137,13 @@ const MedicineBox = ({ navigation }) => {
               const idx = meds.findIndex((m) => m.id === med.id);
               if (idx !== -1) {
                 meds[idx].active = !(meds[idx].active !== false);
+                if (!meds[idx].active && med.notificationIds?.length) {
+                  for (const nid of med.notificationIds) {
+                    if (!isExpoGo) {
+                      await Notifications.cancelScheduledNotificationAsync(nid).catch(() => {});
+                    }
+                  }
+                }
                 await AsyncStorage.setItem(
                   `medicines_${userEmail}`,
                   JSON.stringify(meds),
@@ -157,6 +173,13 @@ const MedicineBox = ({ navigation }) => {
               const meds = JSON.parse(raw || "[]").filter(
                 (m) => m.id !== med.id,
               );
+              if (med.notificationIds?.length) {
+                for (const nid of med.notificationIds) {
+                  if (!isExpoGo) {
+                    await Notifications.cancelScheduledNotificationAsync(nid).catch(() => {});
+                  }
+                }
+              }
               await AsyncStorage.setItem(
                 `medicines_${userEmail}`,
                 JSON.stringify(meds),
@@ -195,10 +218,9 @@ const MedicineBox = ({ navigation }) => {
     const expired = isExpired(med.expiry);
     const expiring = isExpiryClose(med.expiry);
     const lowStock = med.remainingQuantity <= med.frequencyCount * 3;
-    const stockPercent = Math.min(
-      100,
-      Math.round((med.remainingQuantity / med.quantity) * 100),
-    );
+    const stockPercent = med.quantity > 0
+      ? Math.min(100, Math.round((med.remainingQuantity / med.quantity) * 100))
+      : 0;
 
     return (
       <View style={[styles.card, expired && styles.cardExpired]}>
@@ -354,7 +376,7 @@ const MedicineBox = ({ navigation }) => {
         <View style={{ flex: 1 }}>
           <Text style={styles.title}>Medicine Box</Text>
           <Text style={styles.subtitle}>
-            All your current &amp; past medicines
+            All your current & past medicines
           </Text>
         </View>
         <TouchableOpacity

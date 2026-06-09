@@ -72,7 +72,7 @@ const MediLogDash = ({ navigation }) => {
     {
       icon: "pill-multiple",
       label: "Medicine Box",
-      desc: "All your current &amp; past medicines",
+      desc: "All your current & past medicines",
       route: "MedicineBox",
       color: "#EF4444",
       bg: "#FFF5F5",

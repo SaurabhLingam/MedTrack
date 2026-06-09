@@ -87,16 +87,14 @@ export function getModelConfig(modelId) {
 export const MODELS = {
   // NVIDIA API MODEL
   // Get your API key at: https://build.nvidia.com/
-  nvidia_llama: {
-    name: "NVIDIA Llama 4 Maverick",
-    apiKey:
-      "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",
-    model: "meta/llama-4-maverick-17b-128e-instruct",
-    baseUrl: "https://integrate.api.nvidia.com/v1/chat/completions",
-    format: "openai", // NVIDIA API is OpenAI-compatible
+  groq: {
+    name: "Groq (Llama 4 Scout)",
+    apiKey: process.env.EXPO_PUBLIC_GROQ_API,
+    model: "meta-llama/llama-4-scout-17b-16e-instruct",
+    baseUrl: "https://api.groq.com/openai/v1/chat/completions",
+    format: "openai",
     maxTokens: 2048,
     temperature: 0.7,
-    topP: 1.0,
   },
 };
 

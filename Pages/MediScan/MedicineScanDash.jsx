@@ -250,7 +250,7 @@ const HomeScreen = ({ navigation }) => {
         mediaTypes: "images",
         allowsEditing: true,
         aspect: [4, 3],
-        quality: 1,
+        quality: 0.3,
       });
       if (!result.canceled && result.assets?.length > 0) {
         navigation.navigate("MediTrackResult", {

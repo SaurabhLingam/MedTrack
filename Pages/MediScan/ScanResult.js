@@ -195,8 +195,10 @@ async function analyzeImage(imageUri) {
         console.log("Provider:", config.format);
         console.log("Type:", isPrimary ? "PRIMARY" : "FALLBACK");
         console.log("=================================");
-
+        const startTime = Date.now();
         const rawText = await callAPI(base64, config);
+        const elapsed = Date.now() - startTime; 
+        console.log(`⏱️ Response time: ${elapsed}ms (${(elapsed / 1000).toFixed(2)}s)`);
         console.log(`✅ Success with ${config.name}!`);
         console.log("Raw response length:", rawText.length);
 
@@ -274,7 +276,8 @@ async function analyzeImage(imageUri) {
         // ── Return structured result ────────────────────────────────────
         return {
           medicine: {
-            name: displayName || parsed.name || "",
+            name: parsed.name || "",
+            displayName: displayName || parsed.name || "",
             genericName: parsed.genericName || "",
             manufacturer: parsed.manufacturer || "",
             mrp: parsed.mrp || "",

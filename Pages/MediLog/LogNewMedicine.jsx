@@ -860,28 +860,7 @@ const LogNewMedicine = ({ navigation, route }) => {
     setLoading(true);
     try {
       const userEmail = await AsyncStorage.getItem("currentUser");
-      if (!userEmail) {
-        showModal({
-          visible: true,
-          icon: "account-alert-outline",
-          iconColor: "#EF4444",
-          iconBg: "#FFF5F5",
-          title: "Session Expired",
-          message: "Your session has ended. Please log in again.",
-          buttons: [
-            {
-              label: "Log In",
-              primary: true,
-              icon: "login",
-              onPress: () => {
-                hideModal();
-                navigation.replace("Login");
-              },
-            },
-          ],
-        });
-        return;
-      }
+      console.log("Saving medicine for user:", userEmail)
 
       const medsRaw = await AsyncStorage.getItem(`medicines_${userEmail}`);
       const meds = medsRaw ? JSON.parse(medsRaw) : [];

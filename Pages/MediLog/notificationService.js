@@ -3,9 +3,44 @@
 import * as Notifications from "expo-notifications";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import Constants from "expo-constants";
-import { Platform } from "react-native";
+import { Platform, DeviceEventEmitter } from "react-native";
 
 export const isExpoGo = Constants.appOwnership === "expo";
+
+const inAppTimers = {};
+
+const clearInAppTimer = (id) => {
+  const entry = inAppTimers[id];
+  if (!entry) return;
+  clearTimeout(entry.timeoutId);
+  delete inAppTimers[id];
+};
+
+const playReminderSound = async () => {
+  try {
+    const { Audio } = require("expo-av");
+    await Audio.setAudioModeAsync({ playsInSilentModeIOS: true });
+    const { sound } = await Audio.Sound.createAsync(
+      { uri: "https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3" },
+      { shouldPlay: true, volume: 1.0 }
+    );
+    sound.setOnPlaybackStatusUpdate((status) => {
+      if (status.didJustFinish) sound.unloadAsync();
+    });
+  } catch (e) {
+    console.warn("Could not play reminder sound:", e);
+  }
+};
+
+const scheduleInAppReminder = ({ id, fireAt, title, body }) => {
+  const delay = Math.max(0, fireAt.getTime() - Date.now());
+  const timeoutId = setTimeout(() => {
+    playReminderSound();
+    DeviceEventEmitter.emit("medtrack-in-app-reminder", { title, message: body });
+    delete inAppTimers[id];
+  }, delay);
+  inAppTimers[id] = { timeoutId, title, body };
+};
 
 // ─── Configure foreground notification behaviour (call once at app startup) ───
 export function configureForegroundHandler() {
@@ -45,7 +80,6 @@ export async function setupNotificationChannel() {
 //     dismissNotificationAsync() inside handleNotificationAction, so the
 //     tray entry disappears regardless of this flag.
 export async function setupNotificationCategory() {
-  if (isExpoGo) return;
   try {
     await Notifications.setNotificationCategoryAsync("medicine-reminder", [
       {
@@ -71,7 +105,6 @@ export async function setupNotificationCategory() {
 
 // ─── Permission request ───────────────────────────────────────────────────────
 export async function requestNotificationPermission() {
-  if (isExpoGo) return false;
   const { status } = await Notifications.getPermissionsAsync();
   if (status !== "granted") {
     const result = await Notifications.requestPermissionsAsync();
@@ -191,7 +224,25 @@ const parseTime = (timeStr) => {
 };
 
 export async function scheduleNotifications(medicine) {
-  if (isExpoGo) return [];
+  if (isExpoGo) {
+    const ids = [];
+    for (const time of medicine.times) {
+      const { hours, minutes } = parseTime(time);
+      const id = `inapp_${medicine.id}_${time}`;
+      const fireAt = new Date();
+      fireAt.setHours(hours, minutes, 0, 0);
+      if (fireAt.getTime() <= Date.now()) fireAt.setDate(fireAt.getDate() + 1);
+      scheduleInAppReminder({
+        id,
+        fireAt,
+        title: "💊 Medicine Reminder",
+        body: `Time to take your ${medicine.name} (${medicine.doseType})`,
+      });
+      ids.push(id);
+    }
+    return ids;
+  }
+
   try {
     const permission = await requestNotificationPermission();
     if (!permission) return [];
@@ -202,8 +253,10 @@ export async function scheduleNotifications(medicine) {
     await setupNotificationCategory();
 
     const ids = [];
+    console.log("Scheduling notifications for:", medicine.name, medicine.times);
     for (const time of medicine.times) {
       const { hours, minutes } = parseTime(time);
+      console.log(`Scheduling at ${hours}:${minutes}`);
 
       const id = await Notifications.scheduleNotificationAsync({
         content: {
@@ -214,7 +267,7 @@ export async function scheduleNotifications(medicine) {
           data: { medicineId: medicine.id, medicineName: medicine.name },
         },
         trigger: {
-          type: "daily",
+          type: Notifications.SchedulableTriggerInputTypes.DAILY,
           hour: hours,
           minute: minutes,
           channelId: "medicine-reminders",

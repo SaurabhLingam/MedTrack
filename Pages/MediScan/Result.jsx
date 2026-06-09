@@ -656,7 +656,7 @@ const ResultScreen = ({ navigation, route }) => {
             </View>
             <View style={{ flex: 1 }}>
               <Text weight="700" style={styles.medicineName}>
-                {medicine.name}
+                {medicine.displayName}
               </Text>
               <Text style={styles.genericName}>{medicine.genericName}</Text>
             </View>
@@ -759,7 +759,7 @@ const ResultScreen = ({ navigation, route }) => {
         {/* ── Log This Medicine CTA ── */}
         <LogMedicineCTA
           onPress={handleLogMedicine}
-          medicineName={medicine.name}
+          medicineName={medicine.displayName}
         />
 
         {/* ── Section label ── */}

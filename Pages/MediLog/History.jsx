@@ -118,9 +118,8 @@ const History = ({ navigation }) => {
       });
 
       if (updated) {
-        const userEmail2 = await AsyncStorage.getItem("currentUser");
         await AsyncStorage.setItem(
-          `history_${userEmail2}`,
+          `history_${userEmail}`,
           JSON.stringify(history),
         );
       }
@@ -173,17 +172,19 @@ const History = ({ navigation }) => {
         ? new Date().toISOString()
         : null;
 
-      if (history[idx].taken) {
-        const medsRaw = await AsyncStorage.getItem(`medicines_${userEmail}`);
-        const meds = medsRaw ? JSON.parse(medsRaw) : [];
-        const medIdx = meds.findIndex((m) => m.id === item.medicineId);
-        if (medIdx !== -1 && meds[medIdx].remainingQuantity > 0) {
+      const medsRaw = await AsyncStorage.getItem(`medicines_${userEmail}`);
+      const meds = medsRaw ? JSON.parse(medsRaw) : [];
+      const medIdx = meds.findIndex((m) => m.id === item.medicineId);
+      if (medIdx !== -1) {
+        if (history[idx].taken && meds[medIdx].remainingQuantity > 0) {
           meds[medIdx].remainingQuantity -= 1;
-          await AsyncStorage.setItem(
-            `medicines_${userEmail}`,
-            JSON.stringify(meds),
-          );
+        } else if (!history[idx].taken) {
+          meds[medIdx].remainingQuantity += 1;
         }
+        await AsyncStorage.setItem(
+          `medicines_${userEmail}`,
+          JSON.stringify(meds),
+        );
       }
 
       await AsyncStorage.setItem(
