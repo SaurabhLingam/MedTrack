@@ -1,17 +1,18 @@
 import React, { useEffect } from "react";
 import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
-import * as Notifications from "expo-notifications";
+// import * as Notifications from "expo-notifications"; // TODO: re-enable for dev build
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useState } from "react";
 import { DeviceEventEmitter } from "react-native";
 import NotificationSliderAlert from "./Pages/MediLog/NotificationSliderAlert";
-import {
-  configureForegroundHandler,
-  setupNotificationChannel,
-  setupNotificationCategory,
-  handleNotificationAction,
-} from "./Pages/MediLog/notificationService"; // ← adjust if your folder differs
+// TODO: re-enable for dev build:
+// import {
+//   configureForegroundHandler,
+//   setupNotificationChannel,
+//   setupNotificationCategory,
+//   handleNotificationAction,
+// } from "./Pages/MediLog/notificationService";
 
 import Login from "./Pages/Intro/Login";
 import Register from "./Pages/Intro/Register";
@@ -56,27 +57,22 @@ export default function App() {
         console.log(`Re-registered timers for ${meds.length} medicines`);
       }
 
-      // 1. Configure how notifications appear while the app is in the foreground
-      configureForegroundHandler();
-
-      // 2. Register Android channel + action buttons at startup
-      await setupNotificationChannel();
-      await setupNotificationCategory();
-
-      // 3. Handle the action that cold-launched / resumed the app
-      Notifications.getLastNotificationResponseAsync().then((response) => {
-        if (response) handleNotificationAction(response);
-      });
+     // TODO: re-enable for dev build
+      // configureForegroundHandler();
+      // await setupNotificationChannel();
+      // await setupNotificationCategory();
+      // Notifications.getLastNotificationResponseAsync().then((response) => {
+      //   if (response) handleNotificationAction(response);
+      // });
     };
 
     init();
 
-    // 4. Handle actions while the app is already running (fore- & background)
-    const subscription = Notifications.addNotificationResponseReceivedListener(
-      handleNotificationAction,
-    );
-
-    return () => subscription.remove();
+    // TODO: re-enable for dev build
+    // const subscription = Notifications.addNotificationResponseReceivedListener(
+    //   handleNotificationAction,
+    // );
+    // return () => subscription.remove();
   }, []);
 
   return (
